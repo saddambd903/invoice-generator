@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ProfileController;
@@ -32,6 +33,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/vendors/{vendor}', [VendorController::class, 'show'])->where('vendor', Vendor::PUBLIC_ID_PATTERN)->name('vendors.show');
     Route::put('/vendors/{vendor}', [VendorController::class, 'update'])->where('vendor', Vendor::PUBLIC_ID_PATTERN)->name('vendors.update');
     Route::delete('/vendors/{vendor}', [VendorController::class, 'destroy'])->where('vendor', Vendor::PUBLIC_ID_PATTERN)->name('vendors.destroy');
+
+    Route::get('/account', [AccountController::class, 'edit'])->name('account.edit');
+    Route::put('/account', [AccountController::class, 'updateProfile'])->name('account.update');
+    Route::put('/account/password', [AccountController::class, 'updatePassword'])
+        ->middleware('throttle:6,1')->name('account.password');
 
     Route::get('/business', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/business', [ProfileController::class, 'update'])->name('profile.update');

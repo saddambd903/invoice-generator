@@ -12,6 +12,7 @@ Multi-user (SaaS) invoice generator. BDT is the default currency, with USD, EUR,
 - **Same-vendor auto-fill** — pick a saved vendor and the form fills in their phone, email, address, and the type, currency, items and comment of their last invoice (monthly invoices move to the next billing month). It also warns if that last invoice still has money due.
 - **Invoice list** with search, Paid / Partly paid / Unpaid status, and BDT totals (billed, collected, outstanding).
 - **Vendors page** — each vendor's invoice count and outstanding amount, with "New invoice" shortcuts.
+- **Account** — change your name and sign-in email (needs your current password) and update your password.
 - **My business** — your logo (PNG, JPG or WebP, up to 2 MB), name, address, contact and invoice-number prefix (numbers run `INV-202611-001`, `INV-202611-002`, …).
 - **Print / Save as PDF** — clean printable invoice page.
 

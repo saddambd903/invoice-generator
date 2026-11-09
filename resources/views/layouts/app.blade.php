@@ -37,6 +37,7 @@
                 <a href="{{ route('invoices.index') }}" class="{{ request()->routeIs('invoices.index', 'invoices.show', 'invoices.edit') ? 'on' : '' }}">Invoices</a>
                 <a href="{{ route('vendors.index') }}" class="{{ request()->routeIs('vendors.*') ? 'on' : '' }}">Vendors</a>
                 <a href="{{ route('profile.edit') }}" class="{{ request()->routeIs('profile.*') ? 'on' : '' }}">My business</a>
+                <a href="{{ route('account.edit') }}" class="{{ request()->routeIs('account.*') ? 'on' : '' }}" title="Name, email and password">Account</a>
                 @if (auth()->user()->isSuperAdmin())
                     <a href="{{ route('admin.index') }}" class="nav-admin {{ request()->routeIs('admin.*') ? 'on' : '' }}">Super admin</a>
                 @endif
