@@ -118,7 +118,9 @@
     /* ---- vendor auto-fill ---- */
     const note = document.getElementById('autofill-note');
     const nameInput = $('#vendor_name');
-    const known = new Set([...document.querySelectorAll('#vendor-list option')].map((o) => o.value));
+    let vendors = [];
+    try { vendors = JSON.parse(document.getElementById('vendor-data')?.textContent || '[]'); } catch (e) { vendors = []; }
+    const byName = (name) => vendors.find((v) => v.name.toLowerCase() === name.trim().toLowerCase());
     let lastLookup = '';
 
     async function autofill(params) {
@@ -157,15 +159,179 @@
         note.hidden = false;
     }
 
-    function maybeAutofill() {
-        if (editing) return; // never overwrite an invoice being edited
-        const name = nameInput.value.trim();
-        if (!name || name === lastLookup || !known.has(name)) return;
-        lastLookup = name;
-        autofill({ name });
+    /** Fill the contact fields from a saved vendor; on a new invoice also copy their last invoice. */
+    function chooseVendor(v) {
+        nameInput.value = v.name;
+        $('#vendor_phone').value = v.phone || '';
+        $('#vendor_email').value = v.email || '';
+        $('#vendor_address').value = v.address || '';
+        if (editing) return; // never overwrite the items of an invoice being edited
+        if (v.uid === lastLookup) return;
+        lastLookup = v.uid;
+        autofill({ id: v.uid });
     }
-    nameInput.addEventListener('change', maybeAutofill);
-    nameInput.addEventListener('input', maybeAutofill); // datalist pick fires input with the full name
+
+    // Typing an existing vendor's full name and leaving the field also picks them.
+    nameInput.addEventListener('change', () => {
+        const v = byName(nameInput.value);
+        if (v) chooseVendor(v);
+    });
+
+    /* ---- vendor picker (custom dropdown) ---- */
+    const combo = document.getElementById('vendor-combo');
+    const panel = document.getElementById('vendor-panel');
+    const list = document.getElementById('vendor-options');
+    const count = document.getElementById('vendor-count');
+    let shown = [];      // [{vendor} | {create: name}]
+    let active = -1;
+
+    function highlight(text, q) {
+        const frag = document.createDocumentFragment();
+        const i = q ? text.toLowerCase().indexOf(q.toLowerCase()) : -1;
+        if (i < 0) { frag.append(text); return frag; }
+        const mark = document.createElement('mark');
+        mark.textContent = text.slice(i, i + q.length);
+        frag.append(text.slice(0, i), mark, text.slice(i + q.length));
+        return frag;
+    }
+
+    function render() {
+        const q = nameInput.value.trim();
+        const ql = q.toLowerCase();
+        const matches = vendors.filter((v) => !ql
+            || v.name.toLowerCase().includes(ql)
+            || (v.phone || '').toLowerCase().includes(ql)
+            || (v.email || '').toLowerCase().includes(ql));
+        // Names starting with the search come first.
+        matches.sort((a, b) => (b.name.toLowerCase().startsWith(ql)) - (a.name.toLowerCase().startsWith(ql)) || a.name.localeCompare(b.name));
+
+        shown = matches.map((v) => ({ vendor: v }));
+        if (q && !byName(q)) shown.push({ create: q });
+
+        list.innerHTML = '';
+        if (!vendors.length && !q) {
+            const li = document.createElement('li');
+            li.className = 'combo-empty';
+            li.textContent = 'No saved vendors yet. Type a name to add your first one.';
+            list.append(li);
+        } else if (!shown.length) {
+            const li = document.createElement('li');
+            li.className = 'combo-empty';
+            li.textContent = 'No vendors match.';
+            list.append(li);
+        }
+
+        shown.forEach((item, i) => {
+            const li = document.createElement('li');
+            li.id = 'vendor-opt-' + i;
+            li.setAttribute('role', 'option');
+            li.className = 'combo-opt';
+            if (item.vendor) {
+                const v = item.vendor;
+                const av = document.createElement('span');
+                av.className = 'combo-av';
+                av.textContent = v.name.charAt(0).toUpperCase();
+                const txt = document.createElement('span');
+                txt.className = 'combo-txt';
+                const nm = document.createElement('span');
+                nm.className = 'combo-name';
+                nm.append(highlight(v.name, q));
+                const sub = document.createElement('span');
+                sub.className = 'combo-sub';
+                const subText = [v.phone, v.email].filter(Boolean).join(' · ');
+                sub.append(subText ? highlight(subText, q) : 'No contact saved');
+                txt.append(nm, sub);
+                li.append(av, txt);
+                if (nameInput.value.trim().toLowerCase() === v.name.toLowerCase()) li.classList.add('current');
+            } else {
+                li.classList.add('combo-new');
+                const av = document.createElement('span');
+                av.className = 'combo-av plus';
+                av.textContent = '+';
+                const txt = document.createElement('span');
+                txt.className = 'combo-txt';
+                const nm = document.createElement('span');
+                nm.className = 'combo-name';
+                nm.textContent = 'New vendor: “' + item.create + '”';
+                const sub = document.createElement('span');
+                sub.className = 'combo-sub';
+                sub.textContent = 'Added when you save the invoice';
+                txt.append(nm, sub);
+                li.append(av, txt);
+            }
+            li.addEventListener('mousedown', (e) => { e.preventDefault(); pick(i); });
+            li.addEventListener('mousemove', () => setActive(i, false));
+            list.append(li);
+        });
+
+        count.textContent = vendors.length
+            ? (q ? `${matches.length} of ${vendors.length} saved vendors` : `${vendors.length} saved ${vendors.length === 1 ? 'vendor' : 'vendors'}`)
+            : 'Saved vendors';
+        setActive(shown.length ? 0 : -1, false);
+    }
+
+    function setActive(i, scroll = true) {
+        active = i;
+        [...list.querySelectorAll('.combo-opt')].forEach((li, n) => li.classList.toggle('active', n === i));
+        const el = document.getElementById('vendor-opt-' + i);
+        if (el) {
+            nameInput.setAttribute('aria-activedescendant', el.id);
+            if (scroll) el.scrollIntoView({ block: 'nearest' });
+        } else {
+            nameInput.removeAttribute('aria-activedescendant');
+        }
+    }
+
+    function open() {
+        render();
+        panel.hidden = false;
+        combo.classList.add('open');
+        nameInput.setAttribute('aria-expanded', 'true');
+    }
+    function close() {
+        panel.hidden = true;
+        combo.classList.remove('open');
+        nameInput.setAttribute('aria-expanded', 'false');
+        nameInput.removeAttribute('aria-activedescendant');
+    }
+
+    function pick(i) {
+        const item = shown[i];
+        if (!item) return;
+        if (item.vendor) {
+            chooseVendor(item.vendor);
+        } else {
+            nameInput.value = item.create;
+            note.hidden = true;
+            $('#vendor_phone').focus();
+        }
+        close();
+    }
+
+    nameInput.addEventListener('focus', open);
+    nameInput.addEventListener('input', open);
+    nameInput.addEventListener('blur', () => setTimeout(close, 120));
+    nameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (panel.hidden) open(); else setActive(Math.min(active + 1, shown.length - 1));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setActive(Math.max(active - 1, 0));
+        } else if (e.key === 'Enter' && !panel.hidden && active >= 0) {
+            e.preventDefault(); // pick instead of submitting the form
+            pick(active);
+        } else if (e.key === 'Escape' && !panel.hidden) {
+            e.preventDefault();
+            close();
+        } else if (e.key === 'Tab') {
+            close();
+        }
+    });
+    document.getElementById('vendor-toggle').addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        if (panel.hidden) { nameInput.focus(); open(); } else close();
+    });
 
     /* ---- boot ---- */
     renumber();

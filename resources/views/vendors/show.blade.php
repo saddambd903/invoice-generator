@@ -54,7 +54,7 @@
                 <label class="f">Email<input id="email" type="email" name="email" value="{{ old('email', $vendor->email) }}"></label>
             </div>
             <label class="f">Address<input id="address" name="address" value="{{ old('address', $vendor->address) }}"></label>
-            <div class="hint">Changes apply to this vendor's past invoices too, since they show the vendor's current details.</div>
+            <div class="hint">Past invoices keep the details they were issued with. New invoices use these details.</div>
             <div><button class="btn primary" type="submit">Save details</button></div>
         </form>
     </details>

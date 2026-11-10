@@ -48,6 +48,11 @@ class InvoiceSaver
 
             $attributes = [
                 'vendor_id' => $vendor->id,
+                // Snapshot: this invoice keeps these details even if the vendor is edited later.
+                'vendor_name' => $vendor->name,
+                'vendor_phone' => $vendor->phone,
+                'vendor_email' => $vendor->email,
+                'vendor_address' => $vendor->address,
                 'number' => ($data['number'] ?? null) ?: ($invoice?->number ?? $user->nextInvoiceNumber()),
                 'type' => $data['type'],
                 'invoice_date' => $data['invoice_date'],

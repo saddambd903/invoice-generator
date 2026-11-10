@@ -82,7 +82,7 @@
                     @foreach ($invoices as $invoice)
                         <tr onclick="window.location='{{ route('invoices.show', $invoice) }}'">
                             <td class="mono"><a href="{{ route('invoices.show', $invoice) }}">{{ $invoice->number }}</a></td>
-                            <td class="strong">{{ $invoice->vendor->name }}</td>
+                            <td class="strong">{{ $invoice->billToName() }}</td>
                             <td class="nowrap">{{ $invoice->invoice_date->format('d M Y') }}</td>
                             <td><span class="chip type">{{ \App\Models\Invoice::TYPES[$invoice->type] }}</span></td>
                             <td class="num strong">{{ $invoice->money($invoice->total) }}</td>

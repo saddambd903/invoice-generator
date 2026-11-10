@@ -36,7 +36,7 @@ class Invoice extends Model
     ];
 
     protected $fillable = [
-        'vendor_id', 'number', 'type', 'invoice_date', 'due_date', 'billing_month',
+        'vendor_id', 'vendor_name', 'vendor_phone', 'vendor_email', 'vendor_address', 'number', 'type', 'invoice_date', 'due_date', 'billing_month',
         'currency', 'total', 'before_pay', 'now_pay', 'due', 'comment',
     ];
 
@@ -65,6 +65,29 @@ class Invoice extends Model
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class)->orderBy('sl');
+    }
+
+    /**
+     * Who the invoice was billed to, exactly as it was when the invoice was saved.
+     * Falls back to the vendor record for any invoice saved before this was recorded.
+     *
+     * @return array{name: string, phone: ?string, email: ?string, address: ?string}
+     */
+    public function billTo(): array
+    {
+        $v = $this->vendor;
+
+        return [
+            'name' => $this->vendor_name ?? $v?->name ?? '',
+            'phone' => $this->vendor_name !== null ? $this->vendor_phone : $v?->phone,
+            'email' => $this->vendor_name !== null ? $this->vendor_email : $v?->email,
+            'address' => $this->vendor_name !== null ? $this->vendor_address : $v?->address,
+        ];
+    }
+
+    public function billToName(): string
+    {
+        return $this->billTo()['name'];
     }
 
     public function isMonthly(): bool

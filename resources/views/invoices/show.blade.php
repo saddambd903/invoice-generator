@@ -64,9 +64,12 @@
 
     <div class="billto">
         <div class="lbl">Bill to</div>
-        <div style="font-weight:600;font-size:16px">{{ $invoice->vendor->name }}</div>
-        @if ($invoice->vendor->address)<div>{{ $invoice->vendor->address }}</div>@endif
-        <div>{{ collect([$invoice->vendor->phone, $invoice->vendor->email])->filter()->join('  ·  ') }}</div>
+        @php $to = $invoice->billTo(); @endphp
+        <div class="billto-name">{{ $to['name'] }}</div>
+        @if ($to['address'])<div>{{ $to['address'] }}</div>@endif
+        @if ($to['phone'] || $to['email'])
+            <div>{{ collect([$to['phone'], $to['email']])->filter()->join('  ·  ') }}</div>
+        @endif
     </div>
 
     <div class="tablebox">
@@ -99,7 +102,9 @@
         @if ((float) $invoice->before_pay > 0)
             <div><span>Before pay</span><span class="num">{{ $invoice->money($invoice->before_pay) }}</span></div>
         @endif
-        <div><span>Now pay</span><span class="num">{{ $invoice->money($invoice->now_pay) }}</span></div>
+        @if ((float) $invoice->now_pay > 0)
+            <div><span>Now pay</span><span class="num">{{ $invoice->money($invoice->now_pay) }}</span></div>
+        @endif
         <div class="grand"><span>Due amount</span><span class="num">{{ $invoice->money($invoice->due) }}</span></div>
     </div>
 

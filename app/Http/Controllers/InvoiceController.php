@@ -105,6 +105,14 @@ class InvoiceController extends Controller
         ]);
     }
 
+    /** Saved vendors for the vendor picker on the invoice form (no database ids). */
+    private function vendorOptions($user)
+    {
+        return $user->vendors()->orderBy('name')->get(['uid', 'name', 'phone', 'email', 'address'])
+            ->map(fn ($v) => $v->only(['uid', 'name', 'phone', 'email', 'address']))
+            ->values();
+    }
+
     private function dateOrNull(mixed $value): ?Carbon
     {
         if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
@@ -139,7 +147,7 @@ class InvoiceController extends Controller
         return view('invoices.form', [
             'invoice' => $invoice,
             'items' => [['description' => '', 'quantity' => 1, 'unit_price' => ''], ['description' => '', 'quantity' => 1, 'unit_price' => '']],
-            'vendors' => $user->vendors()->orderBy('name')->get(['id', 'name']),
+            'vendors' => $this->vendorOptions($user),
             'prefillVendor' => $prefillVendor,
         ]);
     }
@@ -173,7 +181,7 @@ class InvoiceController extends Controller
                 'quantity' => $i->quantity !== null ? (float) $i->quantity : 1,
                 'unit_price' => (float) $i->unit_price,
             ])->all(),
-            'vendors' => $request->user()->vendors()->orderBy('name')->get(['id', 'name']),
+            'vendors' => $this->vendorOptions($request->user()),
             'prefillVendor' => null,
         ]);
     }

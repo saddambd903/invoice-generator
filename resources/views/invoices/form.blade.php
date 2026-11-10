@@ -6,7 +6,7 @@
     $currencyOther = old('currency_other', $known ? '' : $invoice->currency);
     $type = old('type', $invoice->type ?? 'onetime');
     $rows = old('items', $items);
-    $vendor = $invoice->vendor;
+    $vendor = $invoice->exists ? (object) $invoice->billTo() : null;
 @endphp
 @section('title', $editing ? 'Edit '.$invoice->number : 'New invoice')
 
@@ -67,9 +67,21 @@
             <div class="sec-title"><h2>Bill to</h2><span class="muted">Pick a saved vendor and the rest fills in</span></div>
             <div id="autofill-note" class="autofill" hidden></div>
             <div class="grid">
-                <label class="f">Vendor / client name
-                    <input id="vendor_name" name="vendor[name]" list="vendor-list" value="{{ old('vendor.name', $vendor?->name) }}" required placeholder="Start typing a name">
-                </label>
+                <div class="combo" id="vendor-combo">
+                    <label for="vendor_name">Vendor / client name</label>
+                    <div class="combo-box">
+                        <input id="vendor_name" name="vendor[name]" value="{{ old('vendor.name', $vendor?->name) }}" required
+                               placeholder="Search or type a new name" autocomplete="off"
+                               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="vendor-options">
+                        <button type="button" class="combo-toggle" id="vendor-toggle" tabindex="-1" aria-label="Show saved vendors">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                    </div>
+                    <div class="combo-panel" id="vendor-panel" hidden>
+                        <div class="combo-head" id="vendor-count"></div>
+                        <ul class="combo-list" id="vendor-options" role="listbox" aria-label="Saved vendors"></ul>
+                    </div>
+                </div>
                 <label class="f">Phone
                     <input id="vendor_phone" name="vendor[phone]" inputmode="tel" value="{{ old('vendor.phone', $vendor?->phone) }}">
                 </label>
@@ -80,11 +92,7 @@
             <label class="f">Address
                 <input id="vendor_address" name="vendor[address]" value="{{ old('vendor.address', $vendor?->address) }}">
             </label>
-            <datalist id="vendor-list">
-                @foreach ($vendors as $v)
-                    <option value="{{ $v->name }}"></option>
-                @endforeach
-            </datalist>
+            <script type="application/json" id="vendor-data">@json($vendors)</script>
         </div>
 
         <div class="stack" style="gap:10px">
